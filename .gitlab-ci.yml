@@ -1,0 +1,48 @@
+stages:
+  - notify
+
+asana-attach-branch:
+  stage: notify
+  tags:
+    - shared
+  only:
+    - merge_requests
+  except:
+    refs:
+      - main
+      - dev
+      - master
+  script:
+    - |
+      echo ":link: Linking branch to Asana..."
+      BRANCH_NAME="$CI_COMMIT_REF_NAME"
+      echo "Branch: $BRANCH_NAME"
+      UNIQUE_TASK_ID=$(echo "$BRANCH_NAME" | sed -E 's/^([A-Z]+-[0-9]+).*/\1/')
+      echo "Unique task ID: $UNIQUE_TASK_ID"
+
+      # Extract numeric Asana task ID from branch name, e.g. feature/as-123456789012
+      if [[ -n "$UNIQUE_TASK_ID" ]]; then
+        echo "Found Asana task ID: $UNIQUE_TASK_ID"
+
+        # Get actual task GID from Asana by searching custom field
+        TASK_ID=$(curl -s -X GET "https://app.asana.com/api/1.0/workspaces/$ASANA_WORKSPACE_ID/tasks/search?projects.any=$ASANA_PROJECT_ID&custom_fields.1210183363377386.value=$UNIQUE_TASK_ID" \
+          -H "Authorization: Bearer $ASANA_TOKEN" | jq -r '.data[0].gid')
+        echo "Task GID: $TASK_ID"
+        if [[ "$TASK_ID" != "null" && -n "$TASK_ID" ]]; then
+          echo "Found Asana task GID: $TASK_ID"
+
+          # Send a comment (story) to Asana task
+          curl -s -X POST "https://app.asana.com/api/1.0/tasks/$TASK_ID/stories" \
+            -H "Authorization: Bearer $ASANA_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"data\": {
+                \"text\": \"[$CI_PROJECT_NAME]($CI_PROJECT_URL/-/merge_requests/$CI_MERGE_REQUEST_IID)\"
+              }
+            }"
+        else
+          echo ":x: Could not find a task with ID: $UNIQUE_TASK_ID"
+        fi
+      else
+        echo ":warning: No Asana task ID found in branch name."
+      fi
