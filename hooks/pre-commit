@@ -1,0 +1,30 @@
+#!/bin/sh
+
+echo "Running golangci-lint..."
+
+# Find all dirs in current directory, excluding 'no_get'
+DIRS=$(find . -mindepth 1 -maxdepth 2 -type d ! -name 'no_get')
+
+for dir in $DIRS; do
+    BASENAME=$(basename "$dir")
+
+    # Skip 'proto' directory
+    if [ "$BASENAME" = "proto" ]; then
+        echo "Skipping $dir"
+        continue
+    fi
+
+    # Check if go.mod exists
+    if [ -f "$dir/go.mod" ]; then
+        echo "Running golangci-lint in $dir"
+        (cd "$dir" && golangci-lint run)
+        if [ $? -ne 0 ]; then
+            echo "❌ golangci-lint failed in $dir"
+            exit 1
+        fi
+    else
+        echo "Skipping $dir (no go.mod found)"
+    fi
+done
+
+echo "✅ Lint passed. Proceeding with commit."
