@@ -2,17 +2,25 @@ package queue
 
 import (
 	"context"
+	"maps"
 	"sync"
 
 	"github.com/tuan-dd/go-pkg/common/response"
 )
 
 type (
+	HeaderIf interface {
+		Get(key string) string
+		Set(key string, value string)
+		Add(key string, value string)
+	}
 	Message struct {
 		ID      string
 		Body    []byte
-		Headers *map[string]any
+		Headers *Header
 	}
+
+	Header map[string]any
 
 	QueueServer struct {
 		ErrorFunc ErrorFunc
@@ -30,8 +38,9 @@ type (
 	}
 
 	Options[T any] struct {
-		AutoAck bool
-		Config  T
+		AutoAck    bool
+		Concurrent uint8
+		Config     T
 	}
 
 	ErrorFunc   func(ctx context.Context, msg *Message, err error)
@@ -85,4 +94,47 @@ func (c *QueueClient) Use(mill Middleware) *response.AppError {
 	c.middlewares = append(c.middlewares, mill)
 
 	return nil
+}
+
+func (c *Header) Get(key string) any {
+	value, ok := (*c)[key]
+	if !ok {
+		return ""
+	}
+	return value
+}
+
+func GetHeaderValue[T any](c *Header, key string) T {
+	if value, ok := (*c)[key]; ok {
+		if v, ok := value.(T); ok {
+			return v
+		}
+	}
+	return *new(T)
+}
+
+func (c *Header) Set(key string, value any) {
+	(*c)[key] = value
+}
+
+func (c *Header) Add(key string, value any) {
+	if _, ok := (*c)[key]; !ok {
+		(*c)[key] = value
+	}
+}
+
+func (c *Header) Del(key string) {
+	delete(*c, key)
+}
+
+func (c *Header) Clone() *Header {
+	clone := make(Header, len(*c))
+	maps.Copy(clone, *c)
+	return &clone
+}
+
+func NewMessage() *Message {
+	return &Message{
+		Headers: new(Header),
+	}
 }

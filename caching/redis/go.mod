@@ -4,7 +4,7 @@ go 1.24.2
 
 require (
 	github.com/redis/go-redis/v9 v9.7.3
-	github.com/tuan-dd/go-pkg/common v0.0.0-20250521140317-7fdd59ed42ec
+	github.com/tuan-dd/go-pkg/common v0.0.0-20250611030121-71f669231a62
 )
 
 require (

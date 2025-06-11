@@ -8,7 +8,6 @@ import (
 
 	"github.com/tuan-dd/go-pkg/common/constants"
 	"github.com/tuan-dd/go-pkg/common/response"
-
 	"golang.org/x/sync/errgroup"
 )
 

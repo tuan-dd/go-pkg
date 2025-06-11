@@ -12,3 +12,12 @@ func ToInt[T int | int8 | int16 | int32 | int64](s string) T {
 
 	return T(val)
 }
+
+func ToIntPtrFromInt[T int | int8 | int16 | int32 | int64, V int | int8 | int16 | int32 | int64](ptr *V) *T {
+	if ptr == nil {
+		return nil
+	}
+
+	new := T(*ptr)
+	return &new
+}

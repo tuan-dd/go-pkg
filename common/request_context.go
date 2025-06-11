@@ -62,9 +62,8 @@ func GetUserCtx[T any](ctx context.Context) *UserInfo[T] {
 }
 
 func GetReqCtx(ctx context.Context) *ReqContext {
-	reqCtx := ctx.Value(constants.REQUEST_CONTEXT_KEY).(*ReqContext)
-
-	if reqCtx == nil {
+	reqCtx, ok := ctx.Value(constants.REQUEST_CONTEXT_KEY).(*ReqContext)
+	if !ok || reqCtx == nil {
 		return BuildRequestContext(nil, nil, nil, &UserInfo[any]{})
 	}
 

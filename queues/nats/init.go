@@ -2,160 +2,240 @@ package natsQueue
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
-	"github.com/samber/lo"
 
 	"github.com/tuan-dd/go-pkg/appLogger"
-	"github.com/tuan-dd/go-pkg/common"
-	"github.com/tuan-dd/go-pkg/common/constants"
 	"github.com/tuan-dd/go-pkg/common/queue"
 	"github.com/tuan-dd/go-pkg/common/response"
 )
 
-type QueueConfig struct {
-	Host     string `mapstructure:"HOST"`
-	Port     int    `mapstructure:"PORT"`
-	Username string `mapstructure:"USERNAME"`
-	Password string `mapstructure:"PASSWORD"`
-}
+type (
+	QueueConfig struct {
+		Host     string        `mapstructure:"HOST"`
+		Port     int           `mapstructure:"PORT"`
+		Username string        `mapstructure:"USERNAME"`
+		Token    string        `mapstructure:"TOKEN"`
+		Seed     string        `mapstructure:"SEED"`
+		Password string        `mapstructure:"PASSWORD"`
+		Topics   []TopicConfig `mapstructure:"TOPICS"`
+	}
 
-type Options struct {
-	group   []string
-	ChanSub *int
-}
+	TopicConfig struct {
+		Name        string        `mapstructure:"NAME"`
+		Description string        `mapstructure:"DESCRIPTION"`
+		Subjects    []string      `mapstructure:"SUBJECTS"`
+		MaxMsgs     int64         `mapstructure:"MAX_MSGS"`
+		MaxAge      time.Duration `mapstructure:"MAX_AGE"` // "24h", "30m"
+		MaxBytes    int64         `mapstructure:"MAX_BYTES"`
+		Storage     int           `mapstructure:"STORAGE"`   // "file" hoặc "memory"
+		Retention   int           `mapstructure:"RETENTION"` // "limits", "interest", "workqueue"
+		Replicas    int           `mapstructure:"REPLICAS"`
+	}
 
-type Connection struct {
-	queue.QueueServer
-	conn         *nats.Conn
-	subscription []*nats.Subscription
-	// subscriptionCh chan *nats.Msg
-	js  jetstream.JetStream
-	Log *appLogger.Logger
-}
+	BasicJSOption struct {
+		Group          string
+		AckPolicy      jetstream.AckPolicy
+		MaxDeliver     int
+		AckWait        time.Duration
+		PriorityPolicy jetstream.PriorityPolicy
+		DeliverPolicy  jetstream.DeliverPolicy
+		FilterSubject  string
+		MaxAckPending  int
+		Delay          time.Duration
+	}
+	SubJSOption struct {
+		BasicJSOption
+		Group           string
+		PullMaxMessages int
+	}
+
+	SubOption struct {
+		Group string
+	}
+
+	SubChanOption struct {
+		Group      string
+		ChanNumber int8
+	}
+
+	PubOption struct {
+		Topic   string
+		Durable time.Duration
+	}
+
+	PubJsOption struct {
+		Topic   string
+		Durable time.Duration
+	}
+
+	Connection struct {
+		queue.QueueServer
+		conn         *nats.Conn
+		subscription []*nats.Subscription
+
+		subscriptionJS    []jetstream.ConsumeContext
+		subscriptionJSMsg []jetstream.MessagesContext
+		mapTopic          map[string]jetstream.Stream
+		js                jetstream.JetStream
+		Log               *appLogger.Logger
+	}
+	NatsKey string
+)
+
+const (
+	NatsMSGID NatsKey = "Nats-Msg-Id"
+)
 
 func NewConnection(cfg *QueueConfig, log *appLogger.Logger) (*Connection, *response.AppError) {
-	return connect(fmt.Sprintf("amqp://%s:%s@%s:%d", cfg.Username, cfg.Password, cfg.Host, cfg.Port), log)
+	var conn *nats.Conn
+	var err error
+	if cfg.Seed != "" {
+		dns := fmt.Sprintf("nats://%s:%d", cfg.Host, cfg.Port)
+		conn, err = nats.Connect(dns, nats.UserJWTAndSeed(cfg.Token, cfg.Seed))
+
+	} else if cfg.Token != "" {
+		dns := fmt.Sprintf("nats://%s:%d", cfg.Host, cfg.Port)
+		conn, err = nats.Connect(dns, nats.Token(cfg.Token))
+
+	} else {
+		dns := fmt.Sprintf("nats://%s:%s@%s:%d", cfg.Username, cfg.Password, cfg.Host, cfg.Port)
+		conn, err = nats.Connect(dns)
+	}
+	if err != nil {
+		log.Error("Failed to connect to NATS", err)
+		return nil, response.ServerError("failed to connect nats " + err.Error())
+	}
+	return &Connection{
+		conn: conn,
+		Log:  log,
+	}, nil
 }
 
-func connect(dns string, log *appLogger.Logger) (*Connection, *response.AppError) {
-	conn, err := nats.Connect(dns)
+func NewConnectWithJetStream(cfg *QueueConfig, log *appLogger.Logger) (*Connection, *response.AppError) {
+	var conn *nats.Conn
+	var err error
+	if len(cfg.Topics) == 0 {
+		return nil, response.ServerError("topic is nil or empty")
+	}
+	if cfg.Token != "" {
+		dns := fmt.Sprintf("nats://%s:%d", cfg.Host, cfg.Port)
+		conn, err = nats.Connect(dns, nats.Token(cfg.Token))
 
-	js, _ := jetstream.New(conn)
+	} else {
+		dns := fmt.Sprintf("nats://%s:%s@%s:%d", cfg.Username, cfg.Password, cfg.Host, cfg.Port)
+		conn, err = nats.Connect(dns)
+	}
 	if err != nil {
+		log.Error("Failed to connect to NATS", err)
 		return nil, response.ServerError("failed to connect nats " + err.Error())
 	}
 
-	return &Connection{conn: conn, js: js, Log: log}, nil
+	js, err := jetstream.New(conn)
+	if err != nil {
+		log.Error("Failed to create jetstream", err)
+		return nil, response.ServerError("failed to create jetstream " + err.Error())
+	}
+
+	mapTopic := make(map[string]jetstream.Stream, len(cfg.Topics))
+
+	for _, topic := range cfg.Topics {
+		stream, err := js.Stream(context.Background(), topic.Name)
+		if err != nil {
+			stream, err = js.CreateStream(context.Background(), jetstream.StreamConfig{
+				Name:        topic.Name,
+				Description: topic.Description,
+				Subjects:    topic.Subjects,
+				MaxMsgs:     topic.MaxMsgs,
+				MaxAge:      topic.MaxAge,
+				MaxBytes:    topic.MaxBytes,
+				Storage:     jetstream.StorageType(topic.Storage),
+				Retention:   jetstream.RetentionPolicy(topic.Retention),
+				Replicas:    topic.Replicas,
+			})
+			if err != nil {
+				return nil, response.ServerError(fmt.Sprintf("failed to create jetstream stream %s: %s", topic.Name, err.Error()))
+			}
+		}
+		mapTopic[topic.Name] = stream
+	}
+
+	return &Connection{conn: conn, js: js, Log: log, mapTopic: mapTopic}, nil
 }
 
 func (c *Connection) Shutdown() *response.AppError {
-	defer func() {
-		if err := c.conn.Drain(); err != nil {
-			c.Log.Error("Nats error", err)
+	// First, unsubscribe from all subscriptions to stop receiving new messages
+
+	if len(c.subscriptionJS) > 0 {
+		for _, sub := range c.subscriptionJS {
+			sub.Drain()
 		}
-	}()
+	}
+	if len(c.subscriptionJSMsg) > 0 {
+		for _, sub := range c.subscriptionJSMsg {
+			sub.Drain()
+		}
+	}
+
 	for _, sub := range c.subscription {
 		if err := sub.Unsubscribe(); err != nil {
-			return response.ServerError(err.Error())
+			c.Log.Error("Failed to unsubscribe", err)
+			// Continue with shutdown even if unsubscribe fails
 		}
 	}
-	c.conn.Close()
+
+	// Drain the connection to process remaining messages gracefully
+	if err := c.conn.Drain(); err != nil {
+		c.Log.Error("Nats drain error", err)
+		// Force close if drain fails
+		c.conn.Close()
+		return response.ServerError(fmt.Sprintf("failed to drain nats connection: %s", err.Error()))
+	}
+
+	// Connection is automatically closed after successful drain
 	return nil
 }
 
-func (c *Connection) Subscribe(topic string, options queue.Options[Options], handler queue.HandlerFunc) *response.AppError {
-	ctx := context.Background()
-	stream, err := c.js.CreateStream(ctx, jetstream.StreamConfig{
-		Name:     topic,
-		Subjects: options.Config.group,
-	})
-	if err != nil {
-		return response.ServerError(err.Error())
+func buildConsumerConfig(cfg BasicJSOption) jetstream.ConsumerConfig {
+	return jetstream.ConsumerConfig{
+		Durable:        cfg.Group,
+		AckPolicy:      jetstream.AckExplicitPolicy,
+		MaxDeliver:     cfg.MaxDeliver,
+		AckWait:        cfg.AckWait,
+		PriorityPolicy: cfg.PriorityPolicy,
+		DeliverPolicy:  cfg.DeliverPolicy,
+		FilterSubject:  cfg.FilterSubject,
+		MaxAckPending:  cfg.MaxAckPending,
 	}
-	cons, _ := stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{})
-	_, _ = cons.Consume(func(msg jetstream.Msg) {
-		c.Process(msg, handler)
-	})
+}
 
+func (c *Connection) DeleteAllStreams() *response.AppError {
+	streams := c.js.StreamNames(context.Background())
+
+	for streamName := range streams.Name() {
+		if err := c.js.DeleteStream(context.Background(), streamName); err != nil {
+			c.Log.Error(fmt.Sprintf("Failed to delete stream %s", streamName), err)
+			return response.ServerError(fmt.Sprintf("failed to delete stream %s: %s", streamName, err.Error()))
+		}
+		c.Log.Info(fmt.Sprintf("Deleted stream %s successfully", streamName))
+	}
+	c.Log.Info("All streams deleted successfully")
+
+	c.subscriptionJS = nil
 	return nil
 }
 
-func (c *Connection) Process(d jetstream.Msg, handler queue.HandlerFunc) {
-	var err error
-	defer func() {
-		if err != nil {
-			c.Log.Error("Nats error", err, d)
-		}
-	}()
-
-	headers := map[string]any{}
-
-	for k, v := range d.Headers() {
-		data, err := json.Marshal(v[0])
-		if err != nil {
-			return
-		}
-		headers[k] = data
+func (c *Connection) DeleteStream(name string) *response.AppError {
+	if _, ok := c.mapTopic[name]; !ok {
+		return response.ServerError(fmt.Sprintf("stream %s not found", name))
 	}
-	ctx := buildCtx(d.Headers())
-	message := queue.Message{
-		ID:      d.InProgress().Error(),
-		Body:    []byte(d.Reply()),
-		Headers: &headers,
+	if err := c.js.DeleteStream(context.Background(), name); err != nil {
+		c.Log.Error(fmt.Sprintf("Failed to delete stream %s", name), err)
+		return response.ServerError(fmt.Sprintf("failed to delete stream %s: %s", name, err.Error()))
 	}
 
-	middlewares := c.Middlewares()
-	if len(middlewares) > 0 {
-		for i := len(middlewares) - 1; i >= 0; i-- {
-			handler = middlewares[i](handler)
-		}
-	}
-	// process business
-	errApp := handler(ctx, &message)
-	if err != nil {
-		return
-	}
-
-	if errApp != nil {
-		c.Log.Error("Nats error", errApp, d)
-		err = d.Nak()
-	}
-
-	err = d.Ack()
-}
-
-func buildCtx(header nats.Header) context.Context {
-	ctx := context.Background()
-
-	if header.Get(string(constants.CORRELATION_ID_KEY)) != "" {
-		ctx = context.WithValue(ctx, constants.CORRELATION_ID_KEY, header.Get(string(constants.CORRELATION_ID_KEY)))
-	}
-
-	if header.Get(string(constants.REQUEST_CONTEXT_KEY)) != "" {
-
-		reqCtx := json.Unmarshal([]byte(header.Get(string(constants.REQUEST_CONTEXT_KEY))), &common.ReqContext{})
-		ctx = context.WithValue(ctx, constants.REQUEST_CONTEXT_KEY, reqCtx)
-	}
-
-	return ctx
-}
-
-func (c *Connection) Publish(ctx context.Context, topic string, msg *queue.Message) *response.AppError {
-	headers := make(map[string][]string)
-	for k, v := range lo.FromPtr(msg.Headers) {
-		data, err := json.Marshal(v)
-		if err != nil {
-			return response.ServerError(err.Error())
-		}
-		headers[k] = []string{string(data)}
-	}
-	err := c.conn.PublishMsg(&nats.Msg{Subject: topic, Data: msg.Body, Header: headers})
-	if err != nil {
-		return response.ServerError(err.Error())
-	}
 	return nil
 }

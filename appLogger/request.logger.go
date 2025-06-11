@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/tuan-dd/go-pkg/common"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -49,7 +48,7 @@ func (u ResClientLogger) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 }
 
 func (logger *Logger) ReqClientLog(reqCtx *common.ReqContext, method, path string) {
-	logger.logger.Info(fmt.Sprintf(`Accepted Request [%s/%s] - %s]`, method, path, reqCtx.CID), zap.Object("data", ReqClientLogger{
+	logger.logger.Info(fmt.Sprintf(`Accepted Request [%s/%s] - %s]`, method, path, reqCtx.CID), zap.Inline(ReqClientLogger{
 		CID:       reqCtx.CID,
 		Method:    method,
 		Url:       path,
@@ -72,8 +71,8 @@ func (logger *Logger) ResClientLog(reqCtx *common.ReqContext, statusCode uint, e
 
 	if err != nil {
 		data.Error = err.Error()
-		logger.logger.Error(fmt.Sprintf(`Rejected Request [%s] - %d - %s]`, reqCtx.CID, statusCode, duration), zap.Object("data", data))
+		logger.logger.Error(fmt.Sprintf(`Rejected Request [%s] - %d - %s]`, reqCtx.CID, statusCode, duration), zap.Inline(data))
 	} else {
-		logger.logger.Info(fmt.Sprintf(`Response [%s] - %d - %s]`, reqCtx.CID, statusCode, duration), zap.Object("data", data))
+		logger.logger.Info(fmt.Sprintf(`Response [%s] - %d - %s]`, reqCtx.CID, statusCode, duration), zap.Inline(data))
 	}
 }

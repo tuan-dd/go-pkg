@@ -24,8 +24,3 @@ func MapToStruct[T any](data any, out *T) error {
 	}
 	return json.Unmarshal(bytes, out)
 }
-
-func BytesToStruct[T any](data []byte) (*T, error) {
-	var out *T
-	return out, json.Unmarshal(data, out)
-}

@@ -8,5 +8,5 @@ github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f h1:lO4WD4F/r
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f/go.mod h1:cuUVRXasLTGF7a8hSLbxyZXjz+1KgoB3wDUb6vlszIc=
 github.com/redis/go-redis/v9 v9.7.3 h1:YpPyAayJV+XErNsatSElgRZZVCwXX9QzkKYNvO7x0wM=
 github.com/redis/go-redis/v9 v9.7.3/go.mod h1:bGUrSggJ9X9GUmZpZNEOQKaANxSGgOEBRltRTZHSvrA=
-github.com/tuan-dd/go-pkg/common v0.0.0-20250521140317-7fdd59ed42ec h1:0xtX+0JjUeSIZTztJ8r+TfVAW6MczszauTxewTB7Bt4=
-github.com/tuan-dd/go-pkg/common v0.0.0-20250521140317-7fdd59ed42ec/go.mod h1:PEyod1YLBEWcZNpS1KMZRB2i1H+8fTGPSaRgxmXavXQ=
+github.com/tuan-dd/go-pkg/common v0.0.0-20250611030121-71f669231a62 h1:0Y6K30yyinb8SG4gJOhZ3ZDQDoRMY/PtnXqxMpA9tWY=
+github.com/tuan-dd/go-pkg/common v0.0.0-20250611030121-71f669231a62/go.mod h1:pOD518c7D5WMnmO8sP8sDnuaIpkT22xwKssEYz8k1vA=

@@ -9,7 +9,7 @@ type (
 )
 
 const (
-	Success       InternalCode = 2001 // Success
+	Success       InternalCode = 0    // Success
 	ParamInvalid  InternalCode = 2003 // is invalid
 	TimeInvalid   InternalCode = 2004
 	QueryNotFound InternalCode = 2005 // query not found
@@ -41,6 +41,12 @@ const (
 
 	InternalServerErr InternalCode = 9999
 	DatabaseErr       InternalCode = 9998
+
+	gw               ServerCode = 1000
+	userSer          ServerCode = 1001
+	SpotDataSer      ServerCode = 1002
+	notificationSer  ServerCode = 1003
+	orchestrationSer ServerCode = 1004
 
 	DatabaseNotFound MsgBase = "entity not found"
 )

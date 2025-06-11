@@ -5,7 +5,8 @@ go 1.24.2
 require (
 	entgo.io/ent v0.14.4
 	github.com/casbin/ent-adapter v1.0.0
-	github.com/tuan-dd/go-pkg/common v0.0.0-20250524104158-cb158f9b2a98
+	github.com/samber/lo v1.49.1
+	github.com/tuan-dd/go-pkg/common v0.0.0-20250611030121-71f669231a62
 )
 
 require (
@@ -21,10 +22,10 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.23.0 // indirect
+	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/sagikazarmark/locafero v0.9.0 // indirect
-	github.com/samber/lo v1.49.1 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect

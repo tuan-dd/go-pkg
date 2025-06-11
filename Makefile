@@ -22,10 +22,10 @@ go-init:
 
 
 all-mod-tidy:
-	@for dir in ./*; do \
+	@find . -mindepth 1 -maxdepth 2 -type d | while read dir; do \
 		if [ -f "$$dir/go.mod" ]; then \
 			echo "Running go mod tidy in $$dir"; \
-			( cd "$$dir" && go mod tidy ); \
+			( cd "$$dir" && rm -f go.sum && go get github.com/tuan-dd/go-pkg/common && go get github.com/tuan-dd/go-pkg/appLogger && go mod tidy ); \
 		else \
 			echo "Skipping $$dir (no go.mod)"; \
 		fi; \

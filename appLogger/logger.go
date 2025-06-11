@@ -2,13 +2,13 @@ package appLogger
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/tuan-dd/go-pkg/common"
 	"github.com/tuan-dd/go-pkg/common/constants"
 	"github.com/tuan-dd/go-pkg/common/response"
 	"github.com/tuan-dd/go-pkg/settings"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -42,12 +42,12 @@ func NewLogger(cfg *LoggerConfig, serverConfig *settings.ServerSetting) (*Logger
 	var loggerConfig zapcore.EncoderConfig
 	if serverConfig.Environment != "prod" {
 		loggerConfig = zap.NewDevelopmentEncoderConfig()
+		loggerConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	} else {
 		loggerConfig = zap.NewProductionEncoderConfig()
 	}
 
 	loggerConfig.CallerKey = ""
-	loggerConfig.LevelKey = ""
 	loggerConfig.EncodeTime = nil
 
 	core := zapcore.NewCore(
@@ -85,7 +85,7 @@ func (l *Logger) WithContext(ctx context.Context) *zap.Logger {
 
 	// Add correlation Id if exists
 
-	if cid, ok := ctx.Value(constants.CORRELATION_ID_KEY).(string); ok {
+	if cid, ok := ctx.Value(constants.REQUEST_ID_KEY).(string); ok {
 		fields = append(fields, zap.String("cid", cid))
 	}
 
@@ -123,11 +123,29 @@ func (l *Logger) InfoCtx(ctx context.Context, msg string, err error, fields ...z
 }
 
 func (l *Logger) Info(msg string, fields ...any) {
+	if len(fields) == 0 {
+		l.logger.Info(msg)
+		return
+	}
+
 	if len(fields) == 1 {
-		l.logger.Error(msg, zap.Any("data", fields[0]))
+		l.logger.Info(msg, zap.Any("data", fields[0]))
 		return
 	}
 	l.logger.Info(msg, zap.Any("data", fields))
+}
+
+func (l *Logger) Warn(msg string, fields ...any) {
+	if len(fields) == 0 {
+		l.logger.Warn(msg)
+		return
+	}
+
+	if len(fields) == 1 {
+		l.logger.Warn(msg, zap.Any("data", fields[0]))
+		return
+	}
+	l.logger.Warn(msg, zap.Any("data", fields))
 }
 
 func (l *Logger) Error(msg string, err error, fields ...any) {
@@ -180,4 +198,12 @@ func (l *Logger) ErrorPanic(reqCtx *common.ReqContext, msg string, err any, stac
 		TimeStamp:  reqCtx.RequestTimestamp,
 		Stack:      stack,
 	}))
+}
+
+func (l *Logger) DBLog(ctx context.Context, data ...any) {
+	reqCtx := common.GetReqCtx(ctx)
+
+	duration := common.CalculateDuration(reqCtx.RequestTimestamp)
+
+	l.logger.Info(reqCtx.CID, zap.String("sql", fmt.Sprintf("SQL:%s:%dms", data[0], duration)))
 }

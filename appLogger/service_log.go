@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/tuan-dd/go-pkg/common"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -47,7 +46,7 @@ func (u ResServiceLogger) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 
 // TODO : implement server logger for Grpc
 func (u *Logger) ReqServerLogger(reqCtx *common.ReqContext, method, path string) {
-	u.logger.Info(fmt.Sprintf(`Accepted Request [%s/%s] - %s]`, method, path, reqCtx.CID), zap.Object("data", ReqServiceLogger{
+	u.logger.Info(fmt.Sprintf(`Accepted Request [%s/%s] - %s]`, method, path, reqCtx.CID), zap.Inline(ReqServiceLogger{
 		ServerName: u.serviceName,
 		Method:     method,
 		Url:        path,
@@ -67,8 +66,8 @@ func (u *Logger) ResServerLogger(reqCtx *common.ReqContext, statusCode uint, err
 	}
 	if err != nil {
 		data.Error = err.Error()
-		u.logger.Error(fmt.Sprintf(`Rejected Request [%s] - %d - %s]`, reqCtx.CID, statusCode, duration), zap.Object("data", data))
+		u.logger.Error(fmt.Sprintf(`Rejected Request [%s] - %d - %s]`, reqCtx.CID, statusCode, duration), zap.Inline(data))
 	} else {
-		u.logger.Info(fmt.Sprintf(`Response [%s] - %d - %s]`, reqCtx.CID, statusCode, duration), zap.Object("data", data))
+		u.logger.Info(fmt.Sprintf(`Response [%s] - %d - %s]`, reqCtx.CID, statusCode, duration), zap.Inline(data))
 	}
 }

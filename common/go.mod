@@ -6,6 +6,7 @@ require (
 	github.com/go-jose/go-jose/v4 v4.1.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
+	github.com/joho/godotenv v1.5.1
 	github.com/samber/lo v1.49.1
 	github.com/spf13/viper v1.20.1
 	github.com/sqids/sqids-go v0.4.1

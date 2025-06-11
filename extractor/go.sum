@@ -1,5 +1,5 @@
-github.com/tuan-dd/go-pkg/common v0.0.0-20250524105544-565d7b5cc0e2 h1:n/1e/XSGDyqlUo7jEqvEnU5frX84v+HCWU0b7N05rj0=
-github.com/tuan-dd/go-pkg/common v0.0.0-20250524105544-565d7b5cc0e2/go.mod h1:PEyod1YLBEWcZNpS1KMZRB2i1H+8fTGPSaRgxmXavXQ=
+github.com/tuan-dd/go-pkg/common v0.0.0-20250611030121-71f669231a62 h1:0Y6K30yyinb8SG4gJOhZ3ZDQDoRMY/PtnXqxMpA9tWY=
+github.com/tuan-dd/go-pkg/common v0.0.0-20250611030121-71f669231a62/go.mod h1:pOD518c7D5WMnmO8sP8sDnuaIpkT22xwKssEYz8k1vA=
 golang.org/x/sys v0.32.0 h1:s77OFDvIQeibCmezSnk/q6iAfkdiQaJi4VzroCFrN20=
 golang.org/x/sys v0.32.0/go.mod h1:BJP2sWEmIv4KK5OTEluFJCKSidICx8ciO85XgH3Ak8k=
 google.golang.org/grpc v1.72.1 h1:HR03wO6eyZ7lknl75XlxABNVLLFc2PAb6mHlYh756mA=

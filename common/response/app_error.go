@@ -75,6 +75,20 @@ func NotFound(message string) *AppError {
 	return NewAppError(message, constants.NotFound)
 }
 
+func Duplicate(message string) *AppError {
+	if message == "" {
+		message = "duplicate entry"
+	}
+	return NewAppError(message, constants.DuplicateData)
+}
+
+func Conflict(message string) *AppError {
+	if message == "" {
+		message = "conflict data"
+	}
+	return NewAppError(message, constants.ConflictData)
+}
+
 func ServerError(message string) *AppError {
 	if message == "" {
 		message = "server error"

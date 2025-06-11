@@ -20,7 +20,7 @@ type ErrorResponseData struct {
 }
 
 // success response
-func SuccessResponse(reqCtx *ReqContext, data any) *ResponseData {
+func SuccessResponse(reqCtx *ReqContext, code int, data any) *ResponseData {
 	return &ResponseData{
 		CID:     reqCtx.CID,
 		Code:    int(constants.Success),
