@@ -5,7 +5,7 @@ go 1.24.2
 require (
 	github.com/jackc/pgx/v5 v5.7.4
 	github.com/lib/pq v1.10.9
-	github.com/tuan-dd/go-pkg/common v0.0.0-20250705160037-a4c61ce97caa
+	github.com/tuan-dd/go-pkg/common v0.0.0-20250705161100-a99d963beaba
 )
 
 require (

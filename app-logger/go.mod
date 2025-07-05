@@ -3,8 +3,8 @@ module github.com/tuan-dd/go-pkg/app-logger
 go 1.24.2
 
 require (
-	github.com/tuan-dd/go-pkg/common v0.0.0-20250705160037-a4c61ce97caa
-	github.com/tuan-dd/go-pkg/settings v0.0.0-20250705160037-a4c61ce97caa
+	github.com/tuan-dd/go-pkg/common v0.0.0-20250705161100-a99d963beaba
+	github.com/tuan-dd/go-pkg/settings v0.0.0-20250705161100-a99d963beaba
 	go.uber.org/zap v1.27.0
 )
 
