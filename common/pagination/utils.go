@@ -11,6 +11,6 @@ func PaginationOpts(numArr ...int32) (take, skip int) {
 
 	limit := min(numArr[1], max(numArr[2], 1))
 
-	page := max(numArr[0], 1)
-	return int(limit), (int(page) - 1) * int(limit)
+	page := max(numArr[0], 0)
+	return int(limit), (int(page) * int(limit))
 }

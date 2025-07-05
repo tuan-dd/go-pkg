@@ -41,3 +41,10 @@ func NewRedisClient(cfg *CacheConfig) (*CacheClient, *response.AppError) {
 	slog.Info("redis connect success")
 	return redis, nil
 }
+
+func (r *CacheClient) Client() *redisV9.Client {
+	if r.client == nil {
+		return nil
+	}
+	return r.client
+}

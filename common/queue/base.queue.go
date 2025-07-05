@@ -3,6 +3,7 @@ package queue
 import (
 	"context"
 	"maps"
+	"runtime/debug"
 	"sync"
 
 	"github.com/tuan-dd/go-pkg/common/response"
@@ -15,9 +16,11 @@ type (
 		Add(key string, value string)
 	}
 	Message struct {
+		Topic   string
 		ID      string
 		Body    []byte
 		Headers *Header
+		Recover func(r any, stack []byte) *response.AppError
 	}
 
 	Header map[string]any
@@ -43,6 +46,13 @@ type (
 		Config     T
 	}
 
+	PanicLogger struct {
+		CID       string
+		Topic     string
+		TimeStamp int64
+		Stack     string
+	}
+
 	ErrorFunc   func(ctx context.Context, msg *Message, err error)
 	HandlerFunc func(ctx context.Context, msg *Message) *response.AppError
 
@@ -52,13 +62,13 @@ type (
 		Subscribe(topic string, options Options[T], handler HandlerFunc) *response.AppError
 		Publish(ctx context.Context, topic string, msg *Message) *response.AppError
 		Shutdown() *response.AppError
-		Use(m Middleware) *response.AppError
+		Use(m Middleware)
 	}
 
 	Client interface {
 		Publish(ctx context.Context, topic string, msg *Message) *response.AppError
 		Shutdown() *response.AppError
-		Use(m Middleware) *response.AppError
+		Use(m Middleware)
 	}
 )
 
@@ -74,26 +84,23 @@ func (q *QueueServer) Middlewares() []Middleware {
 	return q.middlewares
 }
 
-func (c *QueueServer) Use(mill Middleware) *response.AppError {
+func (c *QueueServer) Use(mill Middleware) {
 	if len(c.middlewares) > 10 {
-		return response.ServerError("too many middlewares")
+		return
 	}
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.middlewares = append(c.middlewares, mill)
-	return nil
 }
 
-func (c *QueueClient) Use(mill Middleware) *response.AppError {
+func (c *QueueClient) Use(mill Middleware) {
 	if len(c.middlewares) > 10 {
-		return response.ServerError("too many middlewares")
+		return
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.middlewares = append(c.middlewares, mill)
-
-	return nil
 }
 
 func (c *Header) Get(key string) any {
@@ -136,5 +143,27 @@ func (c *Header) Clone() *Header {
 func NewMessage() *Message {
 	return &Message{
 		Headers: new(Header),
+	}
+}
+
+func DefaultRecoverMiddleware(next HandlerFunc) HandlerFunc {
+	return func(ctx context.Context, msg *Message) (result *response.AppError) {
+		defer func() {
+			if r := recover(); r != nil {
+				stack := debug.Stack()
+				if msg.Recover != nil {
+					result = msg.Recover(r, stack)
+				} else {
+					result = response.ServerError("panic in queue handler: " + string(stack))
+				}
+			}
+		}()
+		return next(ctx, msg)
+	}
+}
+
+func DefaultMiddlewares() []Middleware {
+	return []Middleware{
+		DefaultRecoverMiddleware,
 	}
 }

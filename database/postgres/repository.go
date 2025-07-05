@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/tuan-dd/go-pkg/common/constants"
+	"github.com/tuan-dd/go-pkg/common/pagination"
 	"github.com/tuan-dd/go-pkg/common/response"
-	"github.com/tuan-dd/go-pkg/common/utils"
 )
 
 type (
@@ -33,8 +33,8 @@ type (
 
 	FindOption struct {
 		Where
-		Page           uint
-		Limit          uint
+		Page           int32
+		Limit          int32
 		Order          []string
 		Select         []string
 		IncludeDeleted bool
@@ -508,7 +508,7 @@ func (r *Repository[T]) PaginationQuery(ctx context.Context, option *FindOption)
 		selects = strings.Join(option.Select, ",")
 	}
 
-	take, skip := utils.PaginationOpts(option.Page, option.Limit)
+	take, skip := pagination.PaginationOpts(option.Page, option.Limit)
 
 	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE %s", tableName, option.Condition)
 
@@ -532,9 +532,7 @@ func (r *Repository[T]) PaginationQuery(ctx context.Context, option *FindOption)
 		return nil, 0, response.ConvertDatabaseError(err)
 	}
 
-	defer func() {
-		CloseRows(rows)
-	}()
+	defer CloseRows(rows)
 
 	res := make([]T, 0, take)
 	for rows.Next() {
@@ -569,7 +567,7 @@ func (r *Repository[T]) FindMany(ctx context.Context, option *FindOption) ([]T, 
 	}
 
 	if option.Page > 0 && option.Limit > 0 {
-		take, skip := utils.PaginationOpts(option.Page, option.Limit)
+		take, skip := pagination.PaginationOpts(option.Page, option.Limit)
 
 		query = fmt.Sprintf("%s LIMIT ? OFFSET ?", query)
 

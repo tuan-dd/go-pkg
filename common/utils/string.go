@@ -1,16 +1,17 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strings"
 	"time"
 	"unicode"
+	"unsafe"
 
 	"github.com/tuan-dd/go-pkg/common/constants"
 	"github.com/tuan-dd/go-pkg/common/response"
 
+	"github.com/bytedance/sonic"
 	"github.com/samber/lo"
 	"github.com/sqids/sqids-go"
 )
@@ -66,7 +67,7 @@ func ParseIdFromShortUUID(uuid string) (*uint, *response.AppError) {
 func StringToArrayStruct[T any](s string) ([]T, error) {
 	var t []T
 
-	err := json.Unmarshal([]byte(s), &t)
+	err := sonic.Unmarshal([]byte(s), &t)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +79,7 @@ func StringToArrayStruct[T any](s string) ([]T, error) {
 func StringToStruct[T any](s string) (*T, error) {
 	var t T
 
-	err := json.Unmarshal([]byte(s), &t)
+	err := sonic.Unmarshal([]byte(s), &t)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +88,7 @@ func StringToStruct[T any](s string) (*T, error) {
 }
 
 func StructToString[T any](s T) (string, error) {
-	jsonData, err := json.Marshal(s)
+	jsonData, err := sonic.Marshal(s)
 	if err != nil {
 		return "", err
 	}
@@ -134,4 +135,16 @@ func ToSnakeCase(s string) string {
 		}
 	}
 	return string(result)
+}
+
+// BytesToString converts a byte slice to a string without copying the data.
+// It uses unsafe package, so it should be used with caution.
+// The caller must ensure that the byte slice is not modified or garbage collected
+// while the string is still in use.
+func BytesToString(b []byte) string {
+	if len(b) == 0 {
+		return ""
+	}
+
+	return unsafe.String(unsafe.SliceData(b), len(b))
 }

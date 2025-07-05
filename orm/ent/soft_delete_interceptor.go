@@ -4,20 +4,27 @@ import (
 	"context"
 	"time"
 
-	"github.com/tuan-dd/go-pkg/common/utils"
+	"github.com/tuan-dd/go-pkg/common"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/casbin/ent-adapter/ent/hook"
+	"github.com/casbin/ent-adapter/ent/predicate"
 )
 
 // Hooks of the SoftDeleteMixin.
 
 type (
-	mutateClient interface {
-		Mutate(context.Context, ent.Mutation) (ent.Value, error)
+	DeleteMutation interface {
+		SetDeletedAt(time.Time)
+		SetOp(ent.Op)
+		SetDeletedBy(any)
 	}
 	SoftDeleteKey struct{}
+
+	DeleteQuery interface {
+		Where(...predicate.CasbinRule) DeleteQuery
+	}
 )
 
 func (d SoftDeleteMixin) Hooks() []ent.Hook {
@@ -25,17 +32,17 @@ func (d SoftDeleteMixin) Hooks() []ent.Hook {
 		hook.On(
 			func(next ent.Mutator) ent.Mutator {
 				return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-					// Skip soft-delete, means delete the entity permanently.
 					if skip, _ := ctx.Value(SoftDeleteKey{}).(bool); skip {
 						return next.Mutate(ctx, m)
 					}
+					userID := common.GetUserCtx[any](ctx).ID
+					if deleteMutation, ok := m.(DeleteMutation); ok {
+						deleteMutation.SetOp(ent.OpDelete)
+						deleteMutation.SetDeletedAt(time.Now().UTC())
+						deleteMutation.SetDeletedBy(userID)
+					}
 
-					utils.CallMethod("SetOp", m, ent.OpUpdate)
-					utils.CallMethod("SetDeletedAt", m, time.Now().UTC())
-
-					client := utils.CallMethodWithValue[mutateClient]("Client", m)
-
-					return client.Mutate(ctx, m)
+					return next.Mutate(ctx, m)
 				})
 			},
 			ent.OpDeleteOne|ent.OpDelete,
@@ -51,7 +58,10 @@ func (d SoftDeleteMixin) Interceptors() []ent.Interceptor {
 			if skip, _ := ctx.Value(SoftDeleteKey{}).(bool); skip {
 				return nil
 			}
-			utils.CallMethod("Where", q, sql.FieldIsNull(SOFT_DELETE_AT_COLUMN_NAME))
+
+			if deleteQuery, ok := q.(DeleteQuery); ok {
+				deleteQuery.Where(sql.FieldIsNull(SOFT_DELETE_AT_COLUMN_NAME))
+			}
 			return nil
 		}),
 	}

@@ -1,4 +1,4 @@
-package utils
+package timer
 
 import (
 	"time"
@@ -31,8 +31,16 @@ func PreviousDate() string {
 	return time.Now().Add(-24 * time.Hour).Format(time.DateOnly)
 }
 
-func TimeToString(t time.Time, frm string) string {
-	return t.Format(frm)
+func TimeFormatStrDefault(t time.Time) string {
+	return t.Format(time.RFC3339)
+}
+
+func StrFormatTimeDefault(str string) time.Time {
+	t, err := StringToTime(str, time.RFC3339)
+	if err != nil {
+		return time.Time{}
+	}
+	return *t
 }
 
 func StringToTime(dateStr, frm string) (*time.Time, *response.AppError) {
@@ -80,24 +88,6 @@ func UnixToString(unixTime int64, frm string) string {
 	return timestamp.Format(frm)
 }
 
-func LastDayOfThisMonth() int {
-	now := time.Now()
-	year, month := now.Year(), now.Month()
-
-	firstDayOfNextMonth := time.Date(year, month+1, 1, 0, 0, 0, 0, now.Location())
-
-	return firstDayOfNextMonth.Add(-24 * time.Hour).Day()
-}
-
-func LastDayOfNextMonth() int {
-	nextMonth := time.Now().AddDate(0, 1, 0)
-	year, month := nextMonth.Year(), nextMonth.Month()
-
-	firstDayOfNextMonth := time.Date(year, month+1, 1, 0, 0, 0, 0, nextMonth.Location())
-
-	return firstDayOfNextMonth.Add(-24 * time.Hour).Day()
-}
-
 func ThisMonth() int {
 	return int(time.Now().Month())
 }
@@ -117,19 +107,6 @@ func FormatToEndOfDay(t string) (*string, *response.AppError) {
 	res := d.Add(23*time.Hour + 59*time.Minute).Format("200601021504")
 
 	return &res, nil
-}
-
-func StringToDate(str string) string {
-	d, err := StringToTime(str, time.RFC3339)
-	if err != nil {
-		return str
-	}
-
-	// Custom date format layout
-	const customDateFormat = "2006/01/02"
-
-	res := lo.FromPtr(d).Format(customDateFormat)
-	return res
 }
 
 func StringToDateWithFormat(str, format string) string {

@@ -6,11 +6,12 @@ import (
 	"net/url"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/tuan-dd/go-pkg/common"
 	"github.com/tuan-dd/go-pkg/common/constants"
 	"github.com/tuan-dd/go-pkg/common/response"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -28,39 +29,37 @@ var _ grpc.ClientConnInterface = (*GrpcClientConn)(nil)
 // Invoke implements grpc.ClientConnInterface.
 func (c *GrpcClientConn) Invoke(ctx context.Context, method string, args any, reply any, opts ...grpc.CallOption) error {
 	newMethod := path.Join(c.methodPrefix, method)
-	err := c.conn.Invoke(ctx, newMethod, args, reply, opts...)
-	if err != nil {
-		return response.ServerError(fmt.Sprintf("failed to invoke grpc method: %s", err.Error()))
-	}
-	return nil
+	return c.conn.Invoke(ctx, newMethod, args, reply, opts...)
 }
 
 // NewStream implements grpc.ClientConnInterface.
 func (c *GrpcClientConn) NewStream(ctx context.Context, desc *grpc.StreamDesc, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 	newMethod := path.Join(c.methodPrefix, method)
-	stream, err := c.conn.NewStream(ctx, desc, newMethod, opts...)
-	if err != nil {
-		return nil, response.ServerError(fmt.Sprintf("failed to create grpc client stream: %s", err.Error()))
-	}
-	return stream, nil
+	return c.conn.NewStream(ctx, desc, newMethod, opts...)
 }
 
 func NewClientConnectionV2(target string, opts ...grpc.DialOption) (*GrpcClientConn, *response.AppError) {
-	parsedUrl, err := url.Parse(target)
-	if err != nil {
-		return nil, response.ServerError(fmt.Sprintf("failed to parse target url: %s", err.Error()))
-	}
-	scheme := parsedUrl.Scheme
-	path := parsedUrl.Path
-	port := parsedUrl.Port()
-	if port == "" {
-		if scheme == "https" {
-			port = "443"
-		} else {
-			port = "80"
+	address := target
+	scheme := "http"
+	path := ""
+
+	if strings.Contains(target, "://") {
+		parsedUrl, err := url.Parse(target)
+		if err != nil {
+			return nil, response.ServerError(fmt.Sprintf("failed to parse target url: %s", err.Error()))
 		}
+		scheme = parsedUrl.Scheme
+		path = parsedUrl.Path
+		port := parsedUrl.Port()
+		if port == "" {
+			if scheme == "https" {
+				port = "443"
+			} else {
+				port = "80"
+			}
+		}
+		address = fmt.Sprintf("%s:%s", parsedUrl.Hostname(), port)
 	}
-	address := fmt.Sprintf("%s:%s", parsedUrl.Hostname(), port)
 
 	options := []grpc.DialOption{
 		grpc.WithUnaryInterceptor(InjectRequestMetadata),
@@ -122,10 +121,26 @@ func InjectRequestMetadata(ctx context.Context, method string, req, reply any, c
 	if ok {
 		md.Set(string(constants.REQUEST_ID_KEY), inMd.Get(string(constants.REQUEST_ID_KEY))...)
 		md.Set(string(constants.UserID), inMd.Get(string(constants.UserID))...)
+		md.Set(string(constants.RoleID), inMd.Get(string(constants.RoleID))...)
 		md.Set(string(constants.XForwardedFor), inMd.Get(string(constants.XForwardedFor))...)
+		md.Set(string(constants.LANGUAGE_CODE_HEADER_KEY), inMd.Get(string(constants.LANGUAGE_CODE_HEADER_KEY))...)
+		md.Set(string(constants.StartTime), strconv.FormatFloat(float64(time.Now().UnixNano())/1e9, 'f', 3, 64))
+	} else {
+		cid, oke := ctx.Value(constants.REQUEST_ID_KEY).(string)
+		if !oke || cid == "" {
+			cid = common.GetCid(nil)
+		}
+		md.Set(string(constants.REQUEST_ID_KEY), cid)
 		md.Set(string(constants.StartTime), strconv.FormatFloat(float64(time.Now().UnixNano())/1e9, 'f', 3, 64))
 	}
 
 	newCtx := metadata.NewOutgoingContext(ctx, md)
 	return invoker(newCtx, method, req, reply, cc, opts...)
+}
+
+func (c *GrpcClientConn) Shutdown() error {
+	if c.conn != nil {
+		return c.conn.Close()
+	}
+	return nil
 }

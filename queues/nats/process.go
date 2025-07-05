@@ -2,16 +2,15 @@ package natsQueue
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
+	"github.com/bytedance/sonic"
+	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/tuan-dd/go-pkg/common"
 	"github.com/tuan-dd/go-pkg/common/constants"
 	"github.com/tuan-dd/go-pkg/common/queue"
 	"github.com/tuan-dd/go-pkg/common/response"
-
-	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -26,7 +25,7 @@ func (c *Connection) Subscribe(topic string, options queue.Options[SubJSOption],
 
 	s, _ := stream.CreateOrUpdateConsumer(ctx, buildConsumerConfig(options.Config.BasicJSOption))
 
-	handler = c.applyMiddlewares(handler)
+	handler = c.applyMiddlewares(handler, options.Config.IsNoRecovery)
 
 	if options.Config.PullMaxMessages <= 0 {
 		options.Config.PullMaxMessages = 100
@@ -56,12 +55,18 @@ func (c *Connection) SubscribeChan(topic string, options queue.Options[SubJSOpti
 
 func (c *Connection) SubscribeMessage(topic string, options queue.Options[SubJSOption], handler queue.HandlerFunc) *response.AppError {
 	ctx := context.Background()
-	s, err := c.js.CreateOrUpdateConsumer(ctx, topic, buildConsumerConfig(options.Config.BasicJSOption))
+
+	stream, ok := c.mapTopic[topic]
+	if !ok {
+		return response.ServerError(fmt.Sprintf("stream %s not found", topic))
+	}
+
+	s, err := stream.CreateOrUpdateConsumer(ctx, buildConsumerConfig(options.Config.BasicJSOption))
 	if err != nil {
 		c.Log.Error("Failed to create consumer", err, topic)
 		return response.ServerError(fmt.Sprintf("failed to create consumer for topic %s: %s", topic, err.Error()))
 	}
-	handler = c.applyMiddlewares(handler)
+	handler = c.applyMiddlewares(handler, options.Config.IsNoRecovery)
 
 	if options.Config.PullMaxMessages <= 0 {
 		options.Config.PullMaxMessages = 100
@@ -119,7 +124,7 @@ func (c *Connection) SubscribeManage(topic string, options queue.Options[SubJSOp
 		return nil
 	}
 
-	handler = c.applyMiddlewares(handler)
+	handler = c.applyMiddlewares(handler, options.Config.IsNoRecovery)
 	conn, err := s.Consume(c.jsHandleMsg(handler, options.Config.BasicJSOption))
 	if err != nil {
 		c.Log.Error("Failed to subscribe to topic", err, topic)
@@ -141,14 +146,26 @@ func (c *Connection) jsHandleMsg(handler queue.HandlerFunc, options BasicJSOptio
 		for k, v := range natHeader {
 			header.Add(k, v[0])
 		}
+
 		ctx := buildCtx(natHeader)
+
 		message := queue.Message{
 			ID:      natHeader.Get(string(NatsMSGID)),
 			Body:    msg.Data(),
 			Headers: header,
+			Topic:   msg.Subject(),
+			Recover: c.recoverJSMsg(ctx, msg, options),
 		}
 
-		errApp := handler(ctx, &message)
+		errApp := DeBodyCompression(&message)
+
+		if errApp != nil {
+			c.Log.Error("Failed to decompress message body", errApp, msg.Subject())
+			return
+		}
+
+		errApp = handler(ctx, &message)
+
 		if errApp == nil {
 			err = msg.Ack()
 			if err != nil {
@@ -176,6 +193,13 @@ func (c *Connection) jsHandleMsg(handler queue.HandlerFunc, options BasicJSOptio
 	}
 }
 
+func (c *Connection) recoverJSMsg(ctx context.Context, msg jetstream.Msg, _ BasicJSOption) func(r any, stack []byte) *response.AppError {
+	return func(r any, stack []byte) *response.AppError {
+		c.Log.ErrorPanic(common.GetReqCtx(ctx), fmt.Sprintf("Recovered from panic in NATS JetStream handler: %s", msg.Subject()), r, string(stack))
+		return response.ServerError(fmt.Sprintf("panic in NATS JetStream handler: %s", msg.Subject()))
+	}
+}
+
 // NATS subscription
 func (c *Connection) SubscribeChanNor(topic string, options queue.Options[SubChanOption], handler queue.HandlerFunc) *response.AppError {
 	var err error
@@ -186,7 +210,7 @@ func (c *Connection) SubscribeChanNor(topic string, options queue.Options[SubCha
 	}
 
 	chanMsg := make(chan *nats.Msg, options.Config.ChanNumber)
-	handler = c.applyMiddlewares(handler)
+	handler = c.applyMiddlewares(handler, options.Config.IsNoRecovery)
 	if options.Config.Group != "" {
 		sub, err = c.conn.ChanQueueSubscribe(topic, options.Config.Group, chanMsg)
 	} else {
@@ -229,7 +253,7 @@ func (c *Connection) SubscribeNor(topic string, options queue.Options[SubOption]
 	var err error
 	var sub *nats.Subscription
 
-	handler = c.applyMiddlewares(handler)
+	handler = c.applyMiddlewares(handler, options.Config.IsNoRecovery)
 	if options.Config.Group != "" {
 		sub, err = c.conn.QueueSubscribe(topic, options.Config.Group, c.natHandlerMsg(handler))
 	} else {
@@ -245,6 +269,13 @@ func (c *Connection) SubscribeNor(topic string, options queue.Options[SubOption]
 	return nil
 }
 
+func (c *Connection) recoverNatMsg(ctx context.Context, msg *nats.Msg) func(r any, stack []byte) *response.AppError {
+	return func(r any, stack []byte) *response.AppError {
+		c.Log.ErrorPanic(common.GetReqCtx(ctx), fmt.Sprintf("Recovered from panic in NATS handler: %s", msg.Subject), r, string(stack))
+		return response.ServerError(fmt.Sprintf("panic in NATS handler: %s", msg.Subject))
+	}
+}
+
 func (c *Connection) natHandlerMsg(handler queue.HandlerFunc) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		header := &queue.Header{}
@@ -255,15 +286,25 @@ func (c *Connection) natHandlerMsg(handler queue.HandlerFunc) nats.MsgHandler {
 		}
 
 		ctx := buildCtx(natHeader)
+
 		message := queue.Message{
 			ID:      natHeader.Get(string(NatsMSGID)),
 			Body:    msg.Data,
 			Headers: header,
+			Topic:   msg.Subject,
+			Recover: c.recoverNatMsg(ctx, msg),
 		}
-		errApp := handler(ctx, &message)
-		var err error
+		errApp := DeBodyCompression(&message)
+
 		if errApp != nil {
-			if msg.Reply != "" {
+			c.Log.Error("Failed to decompress message body", errApp, msg.Subject)
+			return
+		}
+
+		errApp = handler(ctx, &message)
+		var err error
+		if msg.Reply != "" {
+			if errApp != nil {
 				err = msg.Nak()
 			} else {
 				err = msg.Ack()
@@ -277,8 +318,15 @@ func (c *Connection) natHandlerMsg(handler queue.HandlerFunc) nats.MsgHandler {
 }
 
 // applyMiddlewares applies middleware chain to the handler
-func (c *Connection) applyMiddlewares(handler queue.HandlerFunc) queue.HandlerFunc {
-	middlewares := c.Middlewares()
+func (c *Connection) applyMiddlewares(handler queue.HandlerFunc, isNoRecovery bool) queue.HandlerFunc {
+	middlewares := queue.DefaultMiddlewares()
+
+	if isNoRecovery {
+		middlewares = c.Middlewares()
+	} else {
+		middlewares = append(middlewares, c.Middlewares()...)
+	}
+
 	for i := len(middlewares) - 1; i >= 0; i-- {
 		handler = middlewares[i](handler)
 	}
@@ -294,7 +342,7 @@ func buildCtx(header nats.Header) context.Context {
 
 	if reqCtxStr := header.Get(string(constants.REQUEST_CONTEXT_KEY)); reqCtxStr != "" {
 		var reqCtx common.ReqContext
-		if err := json.Unmarshal([]byte(reqCtxStr), &reqCtx); err == nil {
+		if err := sonic.Unmarshal([]byte(reqCtxStr), &reqCtx); err == nil {
 			ctx = context.WithValue(ctx, constants.REQUEST_CONTEXT_KEY, &reqCtx)
 		}
 	}

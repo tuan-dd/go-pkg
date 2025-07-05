@@ -1,16 +1,20 @@
 package rabbitmq
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tuan-dd/go-pkg/appLogger"
+	"github.com/tuan-dd/go-pkg/common/queue"
+	"github.com/tuan-dd/go-pkg/common/response"
 	"github.com/tuan-dd/go-pkg/settings"
 )
 
 func TestNewConnectionAndShutdown(t *testing.T) {
 	cfg := QueueConfig{
-		Host:     "localhost",
+		Host:     "rabbitmq.com",
 		Port:     5673,
 		Username: "example",
 		Password: "example",
@@ -25,6 +29,17 @@ func TestNewConnectionAndShutdown(t *testing.T) {
 	assert.Nil(t, err, "should not return error on connection")
 	assert.NotNil(t, conn, "connection should not be nil")
 
+	err = conn.SubscribeChan("example", queue.Options[SubChan]{
+		AutoAck:    true,
+		Concurrent: 2,
+	}, func(ctx context.Context, msg *queue.Message) *response.AppError {
+		log.Info("Received message", msg)
+		return nil
+	})
+
+	assert.Nil(t, err, "should not return error on subscribe")
+
+	time.Sleep(3 * time.Second) // wait for messages to be processed
 	shutdownErr := conn.Shutdown()
 	assert.Nil(t, shutdownErr, "should not return error on shutdown")
 }

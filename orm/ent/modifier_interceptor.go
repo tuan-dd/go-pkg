@@ -4,33 +4,45 @@ import (
 	"context"
 
 	"github.com/tuan-dd/go-pkg/common"
-	"github.com/tuan-dd/go-pkg/common/utils"
 
 	"entgo.io/ent"
 )
 
+// Define interfaces for mutations that support modifier fields
+type CreateMutation interface {
+	SetCreatedBy(any)
+	SetOp(ent.Op)
+}
+
+type UpdateMutation interface {
+	SetUpdatedBy(any)
+	SetOp(ent.Op)
+}
+
 func (d ModifierMixin) Hook() ent.Hook {
 	return func(next ent.Mutator) ent.Mutator {
-		return ent.MutateFunc(func(ctx context.Context, mutation ent.Mutation) (ent.Value, error) {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
 			client := next
 
 			if skip, ok := ctx.Value(ModifierKey{}).(bool); ok && skip {
-				return client.Mutate(ctx, mutation)
+				return client.Mutate(ctx, m)
 			}
 
 			userID := common.GetUserCtx[any](ctx).ID
-			switch mutation.Op() {
+			switch m.Op() {
 			case ent.OpCreate:
-				utils.CallMethod("SetOp", mutation, ent.OpCreate)
-				utils.CallMethod("SetCreatedBy", mutation, userID)
-				client = utils.CallMethodWithValue[mutateClient]("Client", mutation)
+				if createMutation, ok := m.(CreateMutation); ok {
+					createMutation.SetOp(ent.OpCreate)
+					createMutation.SetCreatedBy(userID)
+				}
 			case ent.OpUpdateOne, ent.OpUpdate:
-				utils.CallMethod("SetOp", mutation, ent.OpUpdate)
-				utils.CallMethod("SetUpdatedBy", mutation, userID)
-				client = utils.CallMethodWithValue[mutateClient]("Client", mutation)
+				if updateMutation, ok := m.(UpdateMutation); ok {
+					updateMutation.SetOp(ent.OpUpdate)
+					updateMutation.SetUpdatedBy(userID)
+				}
 			}
 
-			return client.Mutate(ctx, mutation)
+			return client.Mutate(ctx, m)
 		})
 	}
 }

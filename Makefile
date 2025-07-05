@@ -1,6 +1,6 @@
 # WORKER_IMAGE=1.24.0-alpine3.21
 
-# DIRS := internal/
+DIRS=$(find . -mindepth 1 -maxdepth 2 -type d ! -name 'no_get')
 
 # DONT_STOP := db redis
 
@@ -25,7 +25,7 @@ all-mod-tidy:
 	@find . -mindepth 1 -maxdepth 2 -type d | while read dir; do \
 		if [ -f "$$dir/go.mod" ]; then \
 			echo "Running go mod tidy in $$dir"; \
-			( cd "$$dir" && rm -f go.sum && go get github.com/tuan-dd/go-pkg/common && go get github.com/tuan-dd/go-pkg/appLogger && go mod tidy ); \
+			( cd "$$dir" && rm -f go.sum && go get github.com/tuan-dd/go-pkg/common && go mod tidy ); \
 		else \
 			echo "Skipping $$dir (no go.mod)"; \
 		fi; \

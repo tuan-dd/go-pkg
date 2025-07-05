@@ -1,12 +1,11 @@
 package entOrm
 
 import (
-	"github.com/tuan-dd/go-pkg/common/utils"
-
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/mixin"
+	"github.com/tuan-dd/go-pkg/common/timer"
 )
 
 type TimeMixin struct {
@@ -16,12 +15,12 @@ type TimeMixin struct {
 func (TimeMixin) Fields() []ent.Field {
 	return []ent.Field{
 		field.Time("created_at").
-			Default(utils.UTCDate).
+			Default(timer.UTCDate).
 			Immutable().
 			Annotations(
 				entsql.Default("CURRENT_TIMESTAMP"),
 			),
-		field.Time("updated_at").UpdateDefault(utils.UTCDate).
+		field.Time("updated_at").UpdateDefault(timer.UTCDate).
 			Optional().
 			Nillable(),
 	}

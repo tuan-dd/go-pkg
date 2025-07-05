@@ -24,6 +24,13 @@ func (r *AppError) Error() string {
 	return fmt.Sprintf("%d:%s", r.Code, r.Message)
 }
 
+func (r *AppError) Wrap() error {
+	if r == nil {
+		return nil
+	}
+	return fmt.Errorf("%d:%s", r.Code, r.Message)
+}
+
 func NewAppError(message string, code constants.InternalCode) *AppError {
 	return &AppError{Code: code, Message: message}
 }

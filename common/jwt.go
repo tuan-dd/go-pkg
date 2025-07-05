@@ -1,11 +1,11 @@
 package common
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/tuan-dd/go-pkg/common/response"
 
+	"github.com/bytedance/sonic"
 	jose "github.com/go-jose/go-jose/v4"
 	"github.com/golang-jwt/jwt"
 
@@ -80,8 +80,8 @@ func VerifySignedToken[T any](
 
 	var payload T
 
-	jsonData, _ := json.Marshal(jwtToken.Claims.(jwt.MapClaims)["eu"])
-	_ = json.Unmarshal(jsonData, &payload)
+	jsonData, _ := sonic.Marshal(jwtToken.Claims.(jwt.MapClaims)["eu"])
+	_ = sonic.Unmarshal(jsonData, &payload)
 
 	return &payload, nil
 }

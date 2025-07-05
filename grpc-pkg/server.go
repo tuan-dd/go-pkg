@@ -54,12 +54,13 @@ func ChainUnary(logger *appLogger.Logger, middlewares ...Middleware) grpc.UnaryS
 
 func RequestContext(_ *appLogger.Logger, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) grpc.UnaryHandler {
 	return func(ctx context.Context, req any) (any, error) {
+		userID, _ := extractor.GetUserID(ctx)
 		reqCtx := &common.ReqContext{
 			CID:              extractor.GetRequestID(ctx),
 			RequestTimestamp: extractor.GetRequestTimestamp(ctx),
 			IP:               extractor.GetXForwardedFor(ctx),
 			UserInfo: &common.UserInfo[any]{
-				ID: extractor.GetUserID(ctx),
+				ID: userID,
 			},
 		}
 
@@ -78,14 +79,14 @@ func GrpcLogInterceptor(log *appLogger.Logger, info *grpc.UnaryServerInfo, handl
 		resp, err := handler(ctx, req)
 		errApp := response.ConvertError(err)
 		statusCode := constants.Success
-		if errApp != nil {
+		if errApp != nil && errApp.Code >= 9000 {
 			statusCode = errApp.Code
 			log.ResServerLogger(reqCtx, uint(statusCode), errApp)
 		} else {
 			log.ResServerLogger(reqCtx, uint(statusCode), nil)
 		}
 
-		return resp, err
+		return resp, errApp.Wrap()
 	}
 }
 

@@ -5,11 +5,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/tuan-dd/go-pkg/common/utils"
-
 	"entgo.io/ent/dialect/sql"
 	"github.com/samber/lo"
-	"github.com/tuan-dd/go-pkg/common"
+	"github.com/tuan-dd/go-pkg/common/utils"
+	"gitlab.betmaker365.com/dev-viet/smm-document/api/common"
 )
 
 type Op int32

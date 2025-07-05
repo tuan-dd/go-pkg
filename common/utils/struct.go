@@ -1,15 +1,17 @@
 package utils
 
-import "encoding/json"
+import (
+	"github.com/bytedance/sonic"
+)
 
 func StructToStruct[T, U any](t *T) (*U, error) {
 	var u U
-	b, err := json.Marshal(t)
+	b, err := sonic.Marshal(t)
 	if err != nil {
 		return nil, err
 	}
 
-	err = json.Unmarshal(b, &u)
+	err = sonic.Unmarshal(b, &u)
 	if err != nil {
 		return nil, err
 	}
@@ -18,9 +20,9 @@ func StructToStruct[T, U any](t *T) (*U, error) {
 }
 
 func MapToStruct[T any](data any, out *T) error {
-	bytes, err := json.Marshal(data)
+	bytes, err := sonic.Marshal(data)
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(bytes, out)
+	return sonic.Unmarshal(bytes, out)
 }

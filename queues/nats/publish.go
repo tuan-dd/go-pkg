@@ -4,16 +4,20 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/tuan-dd/go-pkg/common/queue"
-	"github.com/tuan-dd/go-pkg/common/response"
-
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/tuan-dd/go-pkg/common/queue"
+	"github.com/tuan-dd/go-pkg/common/response"
 )
 
 func (c *Connection) Publish(ctx context.Context, topic string, msg *queue.Message) (*jetstream.PubAck, *response.AppError) {
 	if msg == nil {
 		return nil, response.ServerError("message is nil")
+	}
+	errApp := EnBodyCompression(msg)
+
+	if errApp != nil {
+		return nil, errApp
 	}
 
 	jsCtx, err := c.js.PublishMsg(ctx, c.BuildMessagePub(topic, msg))
@@ -30,6 +34,12 @@ func (c *Connection) PublishAsync(ctx context.Context, topic string, msg *queue.
 		return nil, response.ServerError("message is nil")
 	}
 
+	errApp := EnBodyCompression(msg)
+
+	if errApp != nil {
+		return nil, errApp
+	}
+
 	jsCtx, err := c.js.PublishMsgAsync(c.BuildMessagePub(topic, msg))
 	if err != nil {
 		c.Log.Error(fmt.Sprintf("failed to publish message: %s", topic), err)
@@ -42,6 +52,12 @@ func (c *Connection) PublishAsync(ctx context.Context, topic string, msg *queue.
 func (c *Connection) PublishNor(ctx context.Context, topic string, msg *queue.Message) *response.AppError {
 	if msg == nil {
 		return response.ServerError("message is nil")
+	}
+
+	errApp := EnBodyCompression(msg)
+
+	if errApp != nil {
+		return errApp
 	}
 
 	err := c.conn.PublishMsg(c.BuildMessagePub(topic, msg))

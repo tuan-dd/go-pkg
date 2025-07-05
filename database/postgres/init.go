@@ -19,6 +19,7 @@ type SQLConfig struct {
 	Username        string `mapstructure:"DB_USERNAME"`
 	Password        string `mapstructure:"DB_PASSWORD"`
 	DBname          string `mapstructure:"DB_DBNAME"`
+	LogEnabled      bool   `mapstructure:"LOG_ENABLED"`
 	SSLMode         string `mapstructure:"SSL_MODE"`
 	RDBMS           string `mapstructure:"RDBMS"`
 	MaxConnIdleTime uint32 `mapstructure:"MAX_CONN_IDLE_TIME"`

@@ -5,11 +5,13 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"log/slog"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
 
 	"github.com/tuan-dd/go-pkg/common/response"
+	"github.com/tuan-dd/go-pkg/common/utils"
 )
 
 type SQLConfig struct {
@@ -18,6 +20,7 @@ type SQLConfig struct {
 	Username        string `mapstructure:"DB_USERNAME"`
 	Password        string `mapstructure:"DB_PASSWORD"`
 	DBname          string `mapstructure:"DB_DBNAME"`
+	LogEnabled      bool   `mapstructure:"LOG_ENABLED"`
 	SSLMode         string `mapstructure:"SSL_MODE"`
 	RDBMS           string `mapstructure:"RDBMS"`
 	MaxConnIdleTime uint32 `mapstructure:"MAX_CONN_IDLE_TIME"`
@@ -48,7 +51,11 @@ func connect(dns string, cfg *SQLConfig) (*Connection, *response.AppError) {
 	config.ParseTime = true
 	config.User = cfg.Username
 
-	db, err := sql.Open("mysql", config.FormatDSN())
+	dsn := config.FormatDSN()
+
+	db, err := utils.RetryWithDelay(context.Background(), func(ctx context.Context) (*sql.DB, error) {
+		return sql.Open("mysql", dsn)
+	}, nil)
 	if err != nil {
 		log.Fatalln(err)
 		return nil, response.ConvertDatabaseError(err)
@@ -68,18 +75,27 @@ func connect(dns string, cfg *SQLConfig) (*Connection, *response.AppError) {
 		db.SetMaxIdleConns(int(cfg.MaxIdleConns))
 	}
 
-	return &Connection{
+	conn := &Connection{
 		RDBMS: cfg.RDBMS,
 		db:    db,
 		cfg:   cfg,
-	}, nil
+	}
+
+	errApp := conn.HealthCheck(context.Background())
+	if errApp != nil {
+		return nil, errApp
+	}
+
+	slog.Info("mysql connect success")
+
+	return conn, nil
 }
 
 func (c *Connection) DB() *sql.DB {
 	return c.db
 }
 
-func (c *Connection) Close() *response.AppError {
+func (c *Connection) Shutdown() *response.AppError {
 	err := c.db.Close()
 	if err != nil {
 		return response.ConvertDatabaseError(err)

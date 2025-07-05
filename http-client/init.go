@@ -1,14 +1,16 @@
 package http
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/bytedance/sonic/decoder"
 	"github.com/tuan-dd/go-pkg/appLogger"
 	"github.com/tuan-dd/go-pkg/common/constants"
 	"github.com/tuan-dd/go-pkg/common/response"
@@ -25,7 +27,6 @@ type (
 		httpClient     *http.Client
 		baseURL        *url.URL
 		retryCount     int8
-		retryInterval  time.Duration
 		retryFunc      RetryFunc
 		handleResponse HandleResponse
 		defaultHeaders http.Header
@@ -70,29 +71,49 @@ func (h *Client) fetch(ctx context.Context, req *http.Request) (*http.Response, 
 		return h.httpClient.Do(req)
 	}
 
-	for range h.retryCount {
+	var bodyBytes []byte
+	if req.Body != nil {
+		bodyBytes, _ = io.ReadAll(req.Body)
+	}
+
+	lastRetry := h.retryCount - 1
+	for i := range h.retryCount {
+		if bodyBytes != nil {
+			req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		}
+
 		resp, err = h.httpClient.Do(req)
-		if err == nil {
+
+		if IsSuccessStatus(resp.StatusCode) {
 			return resp, nil
 		}
 
-		if !h.retryFunc(ctx, err) {
+		if i == lastRetry {
+			h.log.Error(fmt.Sprintf("Request the %s %s", req.Method, req.URL.String()), err)
 			break
 		}
 
-		time.Sleep(h.retryInterval)
+		ctx = context.WithValue(ctx, resCtxKey, resp)
+		if !h.retryFunc(ctx, err) {
+			return resp, nil
+		}
+
+		_ = resp.Body.Close()
+
+		h.log.Warn(fmt.Sprintf("Retrying request %s %s, attempt %d/%d", req.Method, req.URL.String(), i+1, h.retryCount))
 	}
 
-	return nil, err
+	return resp, err
 }
 
 func baseHandleResponse(ctx context.Context, res *http.Response) *response.AppError {
-	if res.StatusCode == http.StatusOK || res.StatusCode == http.StatusCreated || res.StatusCode == http.StatusNoContent {
+	if IsSuccessStatus(res.StatusCode) {
 		return nil
 	}
 
+	dec := decoder.NewStreamDecoder(res.Body)
 	bodyRes := make(map[string]any)
-	_ = json.NewDecoder(res.Body).Decode(&bodyRes)
+	_ = dec.Decode(&bodyRes)
 
 	defer func() {
 		_ = res.Body.Close()
@@ -156,4 +177,8 @@ func buildOptions(option *FetchOp) *FetchOp {
 	}
 
 	return option
+}
+
+func IsSuccessStatus(statusCode int) bool {
+	return statusCode >= http.StatusOK && statusCode < http.StatusBadRequest
 }

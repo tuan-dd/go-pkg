@@ -3,12 +3,12 @@ package fiberzap
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -197,7 +197,7 @@ func TestWithContextCaller(t *testing.T) {
 	logger.SetOutput(buf)
 	logger.WithContext(context.Background()).Info("Hello, World!")
 	var logStructMap map[string]any
-	err := json.Unmarshal(buf.Bytes(), &logStructMap)
+	err := sonic.Unmarshal(buf.Bytes(), &logStructMap)
 	assert.Nil(t, err)
 	value := logStructMap["caller"]
 	assert.Equal(t, value, "fiberzap/logger_test.go:183")
@@ -215,7 +215,7 @@ func TestWithExtraKeys(t *testing.T) {
 	logger.WithContext(ctx).Info("%s logger", "extra")
 
 	var logStructMap map[string]any
-	err := json.Unmarshal(buf.Bytes(), &logStructMap)
+	err := sonic.Unmarshal(buf.Bytes(), &logStructMap)
 	assert.Nil(t, err)
 
 	value, ok := logStructMap["requestId"]
@@ -253,7 +253,7 @@ func TestCustomField(t *testing.T) {
 	log.Infow("", "test", "custom")
 	var logStructMap map[string]interface{}
 
-	err := json.Unmarshal(buf.Bytes(), &logStructMap)
+	err := sonic.Unmarshal(buf.Bytes(), &logStructMap)
 
 	assert.Nil(t, err)
 

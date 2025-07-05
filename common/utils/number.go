@@ -21,3 +21,12 @@ func ToIntPtrFromInt[T int | int8 | int16 | int32 | int64, V int | int8 | int16 
 	new := T(*ptr)
 	return &new
 }
+
+func ToFloatPtrFromFloat[T float32 | float64, V float32 | float64](ptr *V) *T {
+	if ptr == nil {
+		return nil
+	}
+
+	new := T(*ptr)
+	return &new
+}

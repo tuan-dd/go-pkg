@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"encoding/json"
 	"os"
+
+	"github.com/bytedance/sonic"
 )
 
 func IsEmpty[T any](arr []T) bool {
@@ -22,6 +23,6 @@ func IsBlank(v *string) bool {
 }
 
 func WriteFile(name string, data any) {
-	b, _ := json.Marshal(data)
+	b, _ := sonic.Marshal(data)
 	_ = os.WriteFile(name, b, 0o644)
 }

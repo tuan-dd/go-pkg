@@ -15,7 +15,7 @@ type (
 		GetFirst(ctx context.Context, name string) string
 		GetTokenID(ctx context.Context) string
 		GetTenantID(ctx context.Context) string
-		GetUserID(ctx context.Context) string
+		GetUserID(ctx context.Context) (string, bool)
 		GetUsername(ctx context.Context) string
 		GetGroupIDs(ctx context.Context) []string
 		GetXForwardedFor(ctx context.Context) string
@@ -25,6 +25,8 @@ type (
 		GetAppID(ctx context.Context) string
 		GetRequestID(ctx context.Context) string
 		GetRequestTimestamp(ctx context.Context) int64
+		GetLanguageCode(ctx context.Context) string
+		GetRole(ctx context.Context) string
 	}
 
 	extractor struct{}
@@ -72,13 +74,13 @@ func (t *extractor) GetTenantID(ctx context.Context) string {
 	return values[0]
 }
 
-func (t *extractor) GetUserID(ctx context.Context) string {
+func (t *extractor) GetUserID(ctx context.Context) (string, bool) {
 	values := t.Get(ctx, string(constants.UserID))
 	if len(values) == 0 {
-		return ""
+		return "", false
 	}
 
-	return values[0]
+	return values[0], true
 }
 
 func (t *extractor) GetUsername(ctx context.Context) string {
@@ -141,4 +143,17 @@ func (t *extractor) GetRequestTimestamp(ctx context.Context) int64 {
 
 func (t *extractor) GetRequestPath(ctx context.Context) string {
 	return t.GetFirst(ctx, string(constants.Path))
+}
+
+func (t *extractor) GetLanguageCode(ctx context.Context) string {
+	return t.GetFirst(ctx, string(constants.LANGUAGE_CODE_HEADER_KEY))
+}
+
+func (t *extractor) GetRole(ctx context.Context) string {
+	values := t.Get(ctx, string(constants.RoleID))
+	if len(values) == 0 {
+		return ""
+	}
+
+	return values[0]
 }
