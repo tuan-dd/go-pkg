@@ -14,7 +14,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 
-	"github.com/tuan-dd/go-pkg/appLogger"
+	appLogger "github.com/tuan-dd/go-pkg/app-logger"
 	"github.com/tuan-dd/go-pkg/common/queue"
 	"github.com/tuan-dd/go-pkg/common/response"
 )

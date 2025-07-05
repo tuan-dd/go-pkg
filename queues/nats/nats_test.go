@@ -12,7 +12,7 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tuan-dd/go-pkg/appLogger"
+	appLogger "github.com/tuan-dd/go-pkg/app-logger"
 	"github.com/tuan-dd/go-pkg/common/queue"
 	"github.com/tuan-dd/go-pkg/common/response"
 	"github.com/tuan-dd/go-pkg/settings"

@@ -5,11 +5,16 @@ go 1.24.2
 require (
 	github.com/nats-io/nats.go v1.42.0
 	github.com/stretchr/testify v1.10.0
+	github.com/tuan-dd/go-pkg/app-logger v0.0.0-20250705163341-a302f850d2be
+	github.com/tuan-dd/go-pkg/common v0.0.0-20250705163341-a302f850d2be
+	github.com/tuan-dd/go-pkg/settings v0.0.0-20250705163341-a302f850d2be
 	golang.org/x/sync v0.14.0
 )
 
+require github.com/subosito/gotenv v1.6.0 // indirect
+
 require (
-	github.com/bytedance/sonic v1.13.3 // indirect
+	github.com/bytedance/sonic v1.13.3
 	github.com/bytedance/sonic/loader v0.2.4 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -19,7 +24,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
-	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/klauspost/compress v1.18.0
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/nats-io/nkeys v0.4.11 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
@@ -33,10 +38,6 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/spf13/viper v1.20.1 // indirect
 	github.com/sqids/sqids-go v0.4.1 // indirect
-	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/tuan-dd/go-pkg/app-logger v0.0.0-20250705161100-a99d963beaba // indirect
-	github.com/tuan-dd/go-pkg/common v0.0.0-20250705160037-a4c61ce97caa // indirect
-	github.com/tuan-dd/go-pkg/settings v0.0.0-20250705160037-a4c61ce97caa // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect

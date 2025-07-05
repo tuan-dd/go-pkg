@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/tuan-dd/go-pkg/appLogger"
+	appLogger "github.com/tuan-dd/go-pkg/app-logger"
 	"github.com/tuan-dd/go-pkg/common"
 	"github.com/tuan-dd/go-pkg/common/constants"
 	"github.com/tuan-dd/go-pkg/common/queue"

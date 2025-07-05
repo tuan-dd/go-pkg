@@ -3,7 +3,13 @@ module github.com/tuan-dd/go-pkg/http-client
 go 1.24.2
 
 require (
-	github.com/bytedance/sonic v1.13.3 // indirect
+	github.com/bytedance/sonic v1.13.3
+	github.com/tuan-dd/go-pkg/app-logger v0.0.0-20250705163341-a302f850d2be
+	github.com/tuan-dd/go-pkg/common v0.0.0-20250705161100-a99d963beaba
+	github.com/tuan-dd/go-pkg/settings v0.0.0-20250705161100-a99d963beaba
+)
+
+require (
 	github.com/bytedance/sonic/loader v0.2.4 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -23,7 +29,6 @@ require (
 	github.com/spf13/viper v1.20.1 // indirect
 	github.com/sqids/sqids-go v0.4.1 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/tuan-dd/go-pkg/common v0.0.0-20250705161100-a99d963beaba // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect

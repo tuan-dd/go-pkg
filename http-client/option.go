@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/tuan-dd/go-pkg/appLogger"
+	appLogger "github.com/tuan-dd/go-pkg/app-logger"
 )
 
 type (

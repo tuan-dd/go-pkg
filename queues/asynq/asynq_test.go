@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tuan-dd/go-pkg/appLogger"
+	appLogger "github.com/tuan-dd/go-pkg/app-logger"
 	"github.com/tuan-dd/go-pkg/settings"
 )
 

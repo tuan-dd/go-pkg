@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic/decoder"
-	"github.com/tuan-dd/go-pkg/appLogger"
+	appLogger "github.com/tuan-dd/go-pkg/app-logger"
 	"github.com/tuan-dd/go-pkg/common/constants"
 	"github.com/tuan-dd/go-pkg/common/response"
 	"github.com/tuan-dd/go-pkg/settings"

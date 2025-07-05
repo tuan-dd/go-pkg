@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/hibiken/asynq"
-	"github.com/tuan-dd/go-pkg/appLogger"
+	appLogger "github.com/tuan-dd/go-pkg/app-logger"
 	"github.com/tuan-dd/go-pkg/common/response"
 )
 
