@@ -5,9 +5,7 @@ go 1.24.2
 require (
 	github.com/nats-io/nats.go v1.42.0
 	github.com/stretchr/testify v1.10.0
-	github.com/tuan-dd/go-pkg/appLogger v0.0.0-20250611030121-71f669231a62
-	github.com/tuan-dd/go-pkg/common v0.0.0-20250611030121-71f669231a62
-	github.com/tuan-dd/go-pkg/settings v0.0.0-20250526145944-4caddd7d9af0
+
 	golang.org/x/sync v0.14.0
 )
 

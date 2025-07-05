@@ -6,9 +6,6 @@ require (
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/samber/lo v1.49.1
 	github.com/stretchr/testify v1.10.0
-	github.com/tuan-dd/go-pkg/appLogger v0.0.0-20250611023133-300ad0f7bd18
-	github.com/tuan-dd/go-pkg/common v0.0.0-20250611023133-300ad0f7bd18
-	github.com/tuan-dd/go-pkg/settings v0.0.0-20250611023133-300ad0f7bd18
 )
 
 require (

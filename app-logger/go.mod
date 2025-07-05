@@ -3,8 +3,8 @@ module github.com/tuan-dd/go-pkg/app-logger
 go 1.24.2
 
 require (
-	github.com/tuan-dd/go-pkg/common v0.0.0-20250630071550-a4ea41deac5f
-	github.com/tuan-dd/go-pkg/settings v0.0.0-20250603151428-5ae8039cac07
+	github.com/tuan-dd/go-pkg/common v0.0.0-20250705160037-a4c61ce97caa
+	github.com/tuan-dd/go-pkg/settings v0.0.0-20250705160037-a4c61ce97caa
 	go.uber.org/zap v1.27.0
 )
 
@@ -14,7 +14,6 @@ require (
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.0 // indirect
-	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect

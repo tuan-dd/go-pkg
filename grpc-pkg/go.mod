@@ -3,9 +3,6 @@ module github.com/tuan-dd/go-pkg/grpc-pkg
 go 1.24.2
 
 require (
-	github.com/tuan-dd/go-pkg/appLogger v0.0.0-20250611030121-71f669231a62
-	github.com/tuan-dd/go-pkg/common v0.0.0-20250611030121-71f669231a62
-	github.com/tuan-dd/go-pkg/extractor v0.0.0-20250611025355-7c3a989c8718
 	google.golang.org/grpc v1.72.1
 )
 
@@ -26,7 +23,7 @@ require (
 	github.com/spf13/viper v1.20.1 // indirect
 	github.com/sqids/sqids-go v0.4.1 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/tuan-dd/go-pkg/settings v0.0.0-20250526145944-4caddd7d9af0 // indirect
+
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
