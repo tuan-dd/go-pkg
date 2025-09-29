@@ -1,0 +1,2 @@
+{"level":"DEBUG","ts":"2025-09-24T07:40:39.076Z","caller":"testing/testing.go:1934","func":"testing.tRunner","msg":"this is a debug log"}
+{"level":"DEBUG","ts":"2025-09-24T07:40:39.076Z","caller":"testing/testing.go:1934","func":"testing.tRunner","msg":"this is a debug log"}
