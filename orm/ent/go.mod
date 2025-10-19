@@ -8,7 +8,7 @@ require (
 	github.com/go-sql-driver/mysql v1.9.0
 	github.com/samber/lo v1.49.1
 	github.com/tuan-dd/go-common v0.0.1
-	gitlab.betmaker365.com/dev-viet/smm-document/api/common v0.0.0-20250826035342-289f63759f06
+	.com/dev-viet/smm-document/api/common v0.0.0-20250826035342-289f63759f06
 )
 
 require (

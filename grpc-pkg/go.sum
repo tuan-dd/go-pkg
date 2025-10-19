@@ -19,8 +19,8 @@ github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 github.com/tuan-dd/go-common v0.0.1 h1:xmxdlEBfd+A/hV9Z43mEXXG8vmvFZlwY9mYJc4GQHjQ=
 github.com/tuan-dd/go-common v0.0.1/go.mod h1:B6c0460SiuZiVeMfwPGHiSArIGsI2JKtTWWMyW3tS6g=
-gitlab.betmaker365.com/dev-viet/smm-document/api/common v0.0.0-20250912135231-95479f8f6514 h1:ilZNmbkulA82dy85u/B5IUJmwYKScP9OXcC+7oowd/8=
-gitlab.betmaker365.com/dev-viet/smm-document/api/common v0.0.0-20250912135231-95479f8f6514/go.mod h1:SMaN86Ghd3Skt5L1j6/iDXCMBclCXVLe8FkqftzWdh4=
+.com/dev-viet/smm-document/api/common v0.0.0-20250912135231-95479f8f6514 h1:ilZNmbkulA82dy85u/B5IUJmwYKScP9OXcC+7oowd/8=
+.com/dev-viet/smm-document/api/common v0.0.0-20250912135231-95479f8f6514/go.mod h1:SMaN86Ghd3Skt5L1j6/iDXCMBclCXVLe8FkqftzWdh4=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0 h1:YH4g8lQroajqUwWbq/tr2QX1JFmEXaDLgG+ew9bLMWo=
